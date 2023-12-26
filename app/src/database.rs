@@ -1,7 +1,8 @@
-use dotenv;
-use rocket::serde::{Deserialize, Serialize};
+use rocket::{
+    serde::{Deserialize, Serialize},
+    State,
+};
 use sqlx::{sqlite::SqlitePool, types::chrono};
-use std::env;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct User {
@@ -12,15 +13,11 @@ pub struct User {
     pub created_at: chrono::NaiveDateTime,
 }
 
-pub async fn fetch_all_users() -> Result<Vec<User>, sqlx::Error> {
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    let pool = SqlitePool::connect(&database_url).await?;
-    let users = sqlx::query_as!(
+pub async fn fetch_all_users(pool: &State<SqlitePool>) -> Result<Vec<User>, sqlx::Error> {
+    sqlx::query_as!(
         User,
-        "select id, name, email, address, created_at from users"
+        "select id, name, email, address, created_at from users order by id asc"
     )
-    .fetch_all(&pool)
-    .await?;
-
-    Ok(users)
+    .fetch_all(pool.inner())
+    .await
 }
