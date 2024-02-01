@@ -1,13 +1,15 @@
 use database::User;
 use error::CustomError;
-use rocket::{fairing::AdHoc, serde::json::Json, State};
+use rocket::{fairing::AdHoc, http::Status, serde::json::Json, State};
 use sqlx::SqlitePool;
 use std::env;
+use todo::todo_list;
 
 use crate::database::fetch_all_users;
 
 mod database;
 mod error;
+mod todo;
 
 #[macro_use]
 extern crate rocket;
@@ -22,14 +24,9 @@ fn world() -> &'static str {
     "hello world22222"
 }
 
-#[get("/hoge")]
-fn hoge() -> &'static str {
-    "hoge"
-}
-
-#[get("/fuga")]
-fn fuga() -> &'static str {
-    "fuga"
+#[get("/health")]
+fn health_check() -> Status {
+    Status::Ok
 }
 
 #[get("/users")]
@@ -53,5 +50,5 @@ async fn rocket() -> _ {
             rocket.manage(pool)
         }))
         .mount("/", routes![index])
-        .mount("/api", routes![world, hoge, fuga, users])
+        .mount("/api", routes![world, health_check, users, todo_list])
 }
