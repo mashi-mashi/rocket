@@ -38,7 +38,7 @@ pub struct TodoTable {
     pub done: bool,
 }
 
-#[post("/todos", format = "json", data = "<todo>")]
+#[post("/todo", format = "json", data = "<todo>")]
 pub async fn create_todo(
     pool: &State<SqlitePool>,
     todo: Json<CreateOrModifyTodoRequest>,
@@ -68,48 +68,45 @@ pub async fn create_todo(
     r
 }
 
-#[get("/todos?<limit>&<done>")]
-pub fn todo_list(limit: Option<usize>, done: Option<bool>) -> Json<TodoListResponse> {
+#[get("/todo?<limit>&<done>")]
+pub async fn todo_list(
+    pool: &State<SqlitePool>,
+    limit: Option<usize>,
+    done: Option<bool>,
+) -> Result<Json<TodoListResponse>, CustomError> {
     format!("limit: {:?}, done: {:?}", limit, done);
-    let source = vec![
-        TodoResponse {
-            id: i64::from_be(1),
-            title: "title1".to_string(),
-            description: Some("description1".to_string()),
-            done: true,
-        },
-        TodoResponse {
-            id: i64::from_be(2),
-            title: "title2".to_string(),
-            description: Some("description2".to_string()),
-            done: false,
-        },
-        TodoResponse {
-            id: i64::from_be(3),
-            title: "title3".to_string(),
-            description: Some("description3".to_string()),
-            done: true,
-        },
-        TodoResponse {
-            id: i64::from_be(4),
-            title: "title4".to_string(),
-            description: Some("description4".to_string()),
-            done: false,
-        },
-    ];
 
-    let filterd = source
-        .clone()
-        .into_iter()
-        .filter(|todo| {
-            if let Some(done) = done {
-                todo.done == done
-            } else {
-                true
-            }
+    let limit = limit.unwrap_or(10) as i64;
+    let done = done.unwrap_or(false);
+
+    let r = sqlx::query_as!(
+        TodoTable,
+        r#"
+        SELECT id, title, description, done
+        FROM todo
+        WHERE done = $1
+        ORDER BY created_at DESC
+        LIMIT $2
+        "#,
+        done,
+        limit
+    )
+    .fetch_all(pool.inner())
+    .await
+    .map(|r| {
+        Json(TodoListResponse {
+            items: r
+                .into_iter()
+                .map(|todo| TodoResponse {
+                    id: todo.id,
+                    title: todo.title,
+                    description: todo.description,
+                    done: todo.done,
+                })
+                .collect(),
         })
-        .take(limit.unwrap_or(10))
-        .collect::<Vec<_>>();
+    })
+    .map_err(CustomError::from);
 
-    Json(TodoListResponse { items: filterd })
+    r
 }
