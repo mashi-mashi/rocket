@@ -3,7 +3,7 @@ use error::CustomError;
 use rocket::{fairing::AdHoc, http::Status, serde::json::Json, State};
 use sqlx::SqlitePool;
 use std::env;
-use todo::todo_list;
+use todo::{create_todo, todo_list};
 
 use crate::database::fetch_all_users;
 
@@ -50,5 +50,8 @@ async fn rocket() -> _ {
             rocket.manage(pool)
         }))
         .mount("/", routes![index])
-        .mount("/api", routes![world, health_check, users, todo_list])
+        .mount(
+            "/api",
+            routes![world, health_check, users, todo_list, create_todo],
+        )
 }
