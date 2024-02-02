@@ -76,6 +76,7 @@ pub async fn todo_list(
 ) -> Result<Json<TodoListResponse>, CustomError> {
     format!("limit: {:?}, done: {:?}", limit, done);
 
+    // sqlxはコンパイル時にSQL文の検証を行うため、query_as!マクロを使用する際にはSQL文を文字列リテラルとして渡す必要がある
     let limit = limit.unwrap_or(10) as i64;
     let done = done.unwrap_or(false);
 
