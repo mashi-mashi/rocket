@@ -1,11 +1,11 @@
-use database::User;
+use database::user::User;
 use error::CustomError;
 use rocket::{fairing::AdHoc, http::Status, serde::json::Json, State};
 use sqlx::SqlitePool;
 use std::env;
 use todo::{create_todo, todo_list};
 
-use crate::database::fetch_all_users;
+use crate::database::user::fetch_all_users;
 
 mod database;
 mod error;
